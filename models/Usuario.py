@@ -21,7 +21,7 @@ class User(Base):
     
 class UserCreate(BaseModel):
     codigo_usuario: int
-    codigo_suscripcion_actual: int
+    codigo_suscripcion_actual: int = 1
     codigo_identidad: int
     nombre_usuario: str | None = None
     edad: int | None = None

@@ -73,3 +73,15 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     
     # Responder con los datos del usuario en caso de éxito
     return {"id": user.codigo_usuario, "nombre": user.nombre_usuario}
+
+@app.get("/users/email/{email}")
+def check_email(email: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.correo == email).first()
+    if user:
+        return {"exists": True}  # El correo está registrado
+    return {"exists": False}  # El correo no está registrado
+
+@app.get("/users/last")
+def get_last_user(db: Session = Depends(get_db)):
+    last_user = db.query(User).order_by(User.codigo_usuario.desc()).first()
+    return last_user
