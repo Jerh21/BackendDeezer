@@ -14,9 +14,11 @@ class HistorialCanciones(Base):
     codigo_cancion = Column(Integer, ForeignKey('tbl_canciones.codigo_cancion'), nullable=False)
     fecha = Column(Date, nullable=False)
 
-    # Relación con otras tablas, si es necesario
-    usuario = relationship("User", back_populates="historial_canciones")
-    cancion = relationship("Song", back_populates="historial_canciones")
+    # Relación con User
+    #usuario = relationship("User", back_populates="historial_canciones")
+
+    # Relación con Canciones
+    #cancion = relationship("Song", back_populates="historial_canciones")
 
 
 class InsertHistorialCanciones(BaseModel):

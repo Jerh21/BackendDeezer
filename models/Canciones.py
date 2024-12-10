@@ -10,21 +10,21 @@ class Song(Base):
     __tablename__ = 'tbl_canciones'
 
     codigo_cancion = Column(Integer, primary_key=True, autoincrement=True)
-    codigo_artista = Column(Integer, ForeignKey('tbl_artistas.codigo_artista'), nullable=False)  # Clave foránea hacia Artistas
-    codigo_genero = Column(Integer, ForeignKey('tbl_generos.codigo_genero'), nullable=False)  # Clave foránea hacia Generos
-    codigo_ambiente = Column(Integer, ForeignKey('tbl_ambientes.codigo_ambiente'), nullable=False)  # Clave foránea hacia Ambientes
-    codigo_album = Column(Integer, ForeignKey('tbl_albums.codigo_album'), nullable=False)  # Clave foránea hacia Albums
+    codigo_artista = Column(Integer, ForeignKey('tbl_artistas.codigo_artista'), nullable=False)
+    codigo_genero = Column(Integer, ForeignKey('tbl_generos.codigo_genero'), nullable=False)
+    codigo_ambiente = Column(Integer, ForeignKey('tbl_ambientes.codigo_ambiente'), nullable=False)
+    codigo_album = Column(Integer, ForeignKey('tbl_albums.codigo_album'), nullable=False)
     titulo = Column(String(100), nullable=False)
     duracion = Column(Float, nullable=False)
     fecha_subida = Column(Date, nullable=False)
-    url_foto_portada = Column(String(300), nullable=True)  # Opcional
-    numero_reproducciones = Column(Integer, default=0)  # Valor predeterminado
+    url_foto_portada = Column(String(300), nullable=True)
+    numero_reproducciones = Column(Integer, default=0)
 
-    # Relacionar con las tablas correspondientes
-    artista = relationship('Artistas', backref='canciones')  # Relación con Artistas
-    genero = relationship('Generos', backref='canciones')  # Relación con Generos
-    ambiente = relationship('Ambientes', backref='canciones')  # Relación con Ambientes
-    album = relationship('Albums', backref='canciones')  # Relación con Albums
+
+
+    # Relación con el historial de canciones
+    #historial_canciones = relationship('HistorialCanciones', back_populates="cancion")
+    #artista = relationship("Artistas", back_populates="canciones")
 
 class InsertSong(BaseModel):
     codigo_cancion: int

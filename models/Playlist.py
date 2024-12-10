@@ -17,7 +17,7 @@ class Playlist(Base):
     url_foto_portada = Column(String(300), nullable=True)
 
     # Relación con el modelo de Usuario
-    usuario = relationship('Usuario', backref='playlists')  # Esto te permitirá acceder a las playlists del usuario
+    #usuario = relationship('Usuario', backref='playlists')  # Esto te permitirá acceder a las playlists del usuario
 
 class InsertPlaylist(BaseModel):
     codigo_playlist: int

@@ -2,8 +2,11 @@ from sqlalchemy import Column, Integer, String, Date
 from datetime import date
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
+
+
 
 class User(Base):
     __tablename__ = 'tbl_usuarios'
@@ -17,6 +20,9 @@ class User(Base):
     contrasenna = Column(String(100), nullable=False)
     fecha_registro = Column(Date, nullable=False)
     url_foto_perfil = Column(String(300))
+
+    # Relación con HistorialCanciones
+    #historial_canciones = relationship("HistorialCanciones", back_populates="usuario")
     
     
 class UserCreate(BaseModel):
