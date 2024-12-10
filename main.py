@@ -72,7 +72,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Contraseña incorrecta")
     
     # Responder con los datos del usuario en caso de éxito
-    return {"id": user.codigo_usuario, "nombre": user.nombre_usuario}
+    return {"id": user.codigo_usuario, "nombre": user.nombre_usuario, "url_foto_perfil": user.url_foto_perfil}
 
 @app.get("/users/email/{email}")
 def check_email(email: str, db: Session = Depends(get_db)):

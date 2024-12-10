@@ -8,9 +8,9 @@ class Artistas(Base):
     __tablename__ = 'tbl_artistas'
     
     codigo_artista = Column(Integer, primary_key=True, autoincrement=True)
-    nombre_artista = Column(String(200), nullable=False)
-    biografia = Column(String)
-    url_foto = Column(String(300)) 
+    nombre_artista = Column(String(200), nullable=False, index=True)  # Agregado el índice para optimizar las búsquedas
+    biografia = Column(String(1000), nullable=True)  # Definí un límite para la biografía (opcional)
+    url_foto = Column(String(300), nullable=True)  # El URL sigue siendo opcional
     
 class InsertArtistas(BaseModel):
     codigo_artista: int
