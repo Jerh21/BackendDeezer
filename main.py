@@ -370,3 +370,29 @@ def obtener_5_albumes_mas_recientes(db: Session):
         }
         for row in result
     ]
+
+
+@app.get("/album-songs/{album_id}")
+def obtener_canciones_album(album_id: int, db: Session = Depends(get_db)):
+    canciones = db.query(
+        Song.codigo_cancion,
+        Song.titulo,
+        Song.codigo_artista,
+        Artistas.nombre_artista,
+        Song.duracion,
+        Song.url_foto_portada
+    ).join(Artistas, Song.codigo_artista == Artistas.codigo_artista, isouter=True)  \
+    .filter(Song.codigo_album == album_id)  \
+    .all()
+    
+    return [
+        {
+            "codigo_cancion": row.codigo_cancion,
+            "titulo": row.titulo,
+            "codigo_artista": row.codigo_artista,
+            "nombre_artista": row.nombre_artista,
+            "duracion": row.duracion,
+            "url_foto_portada": row.url_foto_portada or "/images/default-song.png",
+        }
+        for row in canciones
+    ]
