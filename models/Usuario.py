@@ -20,9 +20,6 @@ class User(Base):
     fecha_registro = Column(Date, nullable=False)
     url_foto_perfil = Column(String(300))
 
-    # Relación con HistorialCanciones
-    #historial_canciones = relationship("HistorialCanciones", back_populates="usuario")
-    
     
 class UserCreate(BaseModel):
     codigo_usuario: int

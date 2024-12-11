@@ -11,6 +11,8 @@ from utils.database import get_db
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime
 
 
 app = FastAPI()
@@ -421,3 +423,43 @@ def obtener_canciones_artista(artist_id: int, db: Session = Depends(get_db)):
         }
         for row in canciones
     ]
+
+class InsertHistorialCanciones(BaseModel):
+    codigo_usuario: int
+    codigo_cancion: int
+    fecha: datetime
+
+@app.post("/insertar_historial/")
+def insertar_historial(historial: InsertHistorialCanciones, db: Session = Depends(get_db)):
+
+    # 1. Verificar que el CODIGO_USUARIO exista en la tabla de usuarios
+    usuario = db.query(User).filter(User.codigo_usuario == historial.codigo_usuario).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    # 2. Verificar que el CODIGO_CANCION exista en la tabla de canciones
+    cancion = db.query(Song).filter(Song.codigo_cancion == historial.codigo_cancion).first()
+    if not cancion:
+        raise HTTPException(status_code=404, detail="Canción no encontrada")
+
+    # 3. Obtener el último CODIGO_HISTORIAL y aumentarlo en 1
+    last_historial = db.query(HistorialCanciones).order_by(HistorialCanciones.codigo_historial.desc()).first()
+    if last_historial:
+        nuevo_codigo_historial = last_historial.codigo_historial + 1
+    else:
+        nuevo_codigo_historial = 1  # Si no hay registros previos, iniciar con 1
+
+    # 4. Crear el nuevo historial
+    nuevo_historial = HistorialCanciones(
+        codigo_historial=nuevo_codigo_historial,
+        codigo_usuario=historial.codigo_usuario,
+        codigo_cancion=historial.codigo_cancion,
+        fecha=historial.fecha,
+    )
+
+    # 5. Insertar el nuevo historial en la base de datos
+    db.add(nuevo_historial)
+    db.commit()
+    db.refresh(nuevo_historial)
+
+    return {"message": "Historial insertado correctamente", "codigo_historial": nuevo_historial.codigo_historial}
