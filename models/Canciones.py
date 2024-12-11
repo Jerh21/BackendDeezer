@@ -21,10 +21,6 @@ class Song(Base):
 
 
 
-    # Relación con el historial de canciones
-    #historial_canciones = relationship('HistorialCanciones', back_populates="cancion")
-    #artista = relationship("Artistas", back_populates="canciones")
-
 class InsertSong(BaseModel):
     codigo_cancion: int
     codigo_artista: int

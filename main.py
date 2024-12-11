@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from models.Usuario import User, UserCreate
 from models.Historial_Canciones import HistorialCanciones
 from models.Artistas import Artistas
-from models.Canciones import Song
+from models.Canciones import Song, InsertSong
 from models.Fans import FansArtista
 from models.Albumes import Album
 from utils.database import get_db
@@ -123,48 +123,48 @@ def get_last_song(user_id: int, db: Session = Depends(get_db)):
     # Devolver los datos de la última canción reproducida
     return {
         "titulo": last_song.titulo,
-        "artista": last_song.nombre_artista,  # Nombre del artista
+        "nombre_artista": last_song.nombre_artista,  # Nombre del artista
         "duracion": last_song.duracion,  # Duración en segundos
         "url_foto_portada": last_song.url_foto_portada or "/images/default-song.png",  # URL de la portada
     }
-    
-# Ruta para obtener los detalles de una canción específica por ID
-@app.get("/api/song/{song_id}")
-def get_song(song_id: int, db: Session = Depends(get_db)):
-    # Buscar la canción por ID
-    song = db.query(Song).filter(Song.codigo_cancion == song_id).first()
 
-    if not song:
-        raise HTTPException(status_code=404, detail="Canción no encontrada.")
-    
-    # Devolver los detalles de la canción
-    return {
-        "codigo_cancion": song.codigo_cancion,
-        "titulo": song.titulo,
-        "artista": song.artista.nombre,  # Asumiendo que tienes una relación con 'Artistas'
-        "album": song.album.nombre,  # Asumiendo que tienes una relación con 'Albums'
-        "duracion": song.duracion,
-        "fecha_subida": song.fecha_subida,
-        "url_foto_portada": song.url_foto_portada or "images/default-song.png",
-    }
 
-# Ruta para obtener los detalles de un artista específico por ID
-@app.get("/api/artist/{artist_id}")
-def get_artist(artist_id: int, db: Session = Depends(get_db)):
-    # Buscar el artista por ID
-    artist = db.query(Artistas).filter(Artistas.codigo_artista == artist_id).first()
+@app.get("/song/{song_id}")
+def obtener_cancion(song_id: int, db: Session = Depends(get_db)):
+    cancion = obtener_cancion_por_id(db, song_id)
+    if cancion:
+        return cancion
+    return {"error": "Canción no encontrada"}
 
-    if not artist:
-        raise HTTPException(status_code=404, detail="Artista no encontrado.")
-    
-    # Devolver los detalles del artista
-    return {
-        "codigo_artista": artist.codigo_artista,
-        "nombre": artist.nombre,  # Asumiendo que el artista tiene un campo 'nombre'
-        "biografia": artist.biografia or "Biografía no disponible",  # Suponiendo que tiene un campo 'biografia'
-        "url_foto": artist.url_foto or "images/default-profile.png",  # URL de la foto del artista
-    }
-    
+
+# Función para obtener la canción y su artista
+def obtener_cancion_por_id(db: Session, song_id: int):
+    # Hacemos la consulta con un LEFT JOIN entre tbl_canciones y tbl_artistas
+    query = (
+        db.query(
+            Song.codigo_cancion,
+            Song.titulo,
+            Song.codigo_artista,
+            Artistas.nombre_artista,
+            Song.duracion,
+            Song.url_foto_portada
+        )
+        .join(Artistas, Song.codigo_artista == Artistas.codigo_artista, isouter=True)  # LEFT JOIN
+        .filter(Song.codigo_cancion == song_id)  # Filtrar por el ID de la canción
+    )
+
+    result = query.first()  # Obtenemos solo el primer (y único) resultado
+
+    if result:
+        return {
+            "codigo_cancion": result.codigo_cancion,
+            "titulo": result.titulo,
+            "codigo_artista": result.codigo_artista,
+            "nombre_artista": result.nombre_artista,
+            "duracion": result.duracion,
+            "url_foto_portada": result.url_foto_portada or "/images/default-song.png",  # Si no tiene portada, usar la portada por defecto
+        }
+    return None
     
 @app.get("/artist-stats")
 def get_artist_stats(db: Session = Depends(get_db)):
