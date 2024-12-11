@@ -6,6 +6,7 @@ from models.Historial_Canciones import HistorialCanciones
 from models.Artistas import Artistas
 from models.Canciones import Song
 from models.Fans import FansArtista
+from models.Albumes import Album
 from utils.database import get_db
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -208,6 +209,66 @@ def get_artist_stats(db: Session = Depends(get_db)):
             "url_foto": row.url_foto or "/images/default-profile.png",  # Foto predeterminada si no hay URL
             "fans": row.fans,
             "cantidad_cancion": row.cantidad_cancion or 0  # Asumir 0 si es NULL
+        }
+        for row in result
+    ]
+    
+    
+@app.get("/albumes-detalles")
+def obtener_albumes_con_detalles(db: Session = Depends(get_db)):
+    albumes = obtener_albumes_con_detalles(db)
+    return albumes
+
+
+def obtener_albumes_con_detalles(db: Session):
+    # Subconsulta para obtener cantidad de canciones y duración total por álbum
+    subquery_canciones_album = (
+        db.query(
+            Song.codigo_album.label("codigo_album"),
+            func.count(Song.codigo_album).label("cantidad_canciones_album"),
+            func.sum(Song.duracion).label("duracion_album")
+        )
+        .group_by(Song.codigo_album)
+        .subquery()
+    )
+
+    # Consulta principal
+    query = (
+        db.query(
+            Album.codigo_album,
+            Album.titulo,
+            Album.codigo_artista,
+            Artistas.nombre_artista,
+            subquery_canciones_album.c.cantidad_canciones_album,
+            subquery_canciones_album.c.duracion_album,
+            Album.fecha_lanzamiento
+        )
+        .join(Artistas, Album.codigo_artista == Artistas.codigo_artista)
+        .outerjoin(subquery_canciones_album, Album.codigo_album == subquery_canciones_album.c.codigo_album)
+        .group_by(
+            Album.codigo_album,
+            Album.titulo,
+            Album.codigo_artista,
+            Artistas.nombre_artista,
+            subquery_canciones_album.c.cantidad_canciones_album,
+            subquery_canciones_album.c.duracion_album,
+            Album.fecha_lanzamiento
+        )
+    )
+
+    # Ejecutar la consulta y obtener los resultados
+    result = query.all()
+
+    # Serializar los resultados
+    return [
+        {
+            "codigo_album": row.codigo_album,
+            "titulo": row.titulo,
+            "codigo_artista": row.codigo_artista,
+            "nombre_artista": row.nombre_artista,
+            "cantidad_canciones_album": row.cantidad_canciones_album or 0,
+            "duracion_album": row.duracion_album or 0,
+            "fecha_lanzamiento": row.fecha_lanzamiento,
         }
         for row in result
     ]
