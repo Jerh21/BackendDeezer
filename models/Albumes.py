@@ -12,7 +12,7 @@ class Album(Base):
     codigo_artista = Column(Integer, ForeignKey('tbl_artistas.codigo_artista'), nullable=False)
     titulo = Column(String(300), nullable=False)
     fecha_lanzamiento = Column(Date, nullable=False)
-    url_foto_portada = Column(String(300), nullable=True)
+    url_portada = Column(String(300), nullable=True)
 
 
 
@@ -25,4 +25,4 @@ class InsertAlbum(BaseModel):
     codigo_artista: int
     titulo: str
     fecha_lanzamiento: date
-    url_foto_portada: str | None = None  # Opcional
+    url_portada: str | None = None  # Opcional

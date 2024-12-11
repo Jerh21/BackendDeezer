@@ -206,7 +206,7 @@ def get_artist_stats(db: Session = Depends(get_db)):
         {
             "codigo_artista": row.codigo_artista,
             "nombre_artista": row.nombre_artista,
-            "url_foto": row.url_foto or "/images/default-profile.png",  # Foto predeterminada si no hay URL
+            "url_foto": row.url_foto or "/images/default-artist.jpg",  # Foto predeterminada si no hay URL
             "fans": row.fans,
             "cantidad_cancion": row.cantidad_cancion or 0  # Asumir 0 si es NULL
         }
@@ -269,6 +269,104 @@ def obtener_albumes_con_detalles(db: Session):
             "cantidad_canciones_album": row.cantidad_canciones_album or 0,
             "duracion_album": row.duracion_album or 0,
             "fecha_lanzamiento": row.fecha_lanzamiento,
+        }
+        for row in result
+    ]
+    
+@app.get("/top-albumes-reproducidos")
+def obtener_top_albumes_reproducidos_endpoint(db: Session = Depends(get_db)):
+    top_albumes = obtener_top_albumes_reproducidos(db)
+    return top_albumes
+
+    
+def obtener_top_albumes_reproducidos(db: Session):
+    # Subconsulta para obtener el total de reproducciones por álbum
+    subquery_reproducciones_total = (
+        db.query(
+            Song.codigo_album.label("codigo_album"),
+            func.sum(Song.numero_reproducciones).label("reproducciones_album")
+        )
+        .group_by(Song.codigo_album)
+        .subquery()
+    )
+
+    # Consulta principal
+    query = (
+        db.query(
+            Album.codigo_album,
+            Album.titulo,
+            Album.codigo_artista,
+            Artistas.nombre_artista,
+            Album.fecha_lanzamiento,
+            Album.url_portada,
+            subquery_reproducciones_total.c.reproducciones_album
+        )
+        .join(Artistas, Album.codigo_artista == Artistas.codigo_artista)
+        .outerjoin(subquery_reproducciones_total, Album.codigo_album == subquery_reproducciones_total.c.codigo_album)
+        .group_by(
+            Album.codigo_album,
+            Album.titulo,
+            Album.codigo_artista,
+            Artistas.nombre_artista,
+            Album.fecha_lanzamiento,
+            Album.url_portada,
+            subquery_reproducciones_total.c.reproducciones_album
+        )
+        .order_by(desc(subquery_reproducciones_total.c.reproducciones_album))  # Ordenar por reproducciones, descendente
+        .limit(5)  # Limitar a los 5 álbumes más reproducidos
+    )
+
+    # Ejecutar la consulta y obtener los resultados
+    result = query.all()
+
+    # Serializar los resultados
+    return [
+        {
+            "codigo_album": row.codigo_album,
+            "titulo": row.titulo,
+            "codigo_artista": row.codigo_artista,
+            "nombre_artista": row.nombre_artista,
+            "fecha_lanzamiento": row.fecha_lanzamiento,
+            "url_portada": row.url_portada or "/images/default-cover.jpg",
+            "reproducciones_album": row.reproducciones_album or 0,  # Asumir 0 si es NULL
+        }
+        for row in result
+    ]
+    
+
+@app.get("/top-5-albumes-recientes")
+def obtener_top_5_albumes_recientes(db: Session = Depends(get_db)):
+    albumes_recientes = obtener_5_albumes_mas_recientes(db)
+    return albumes_recientes
+
+def obtener_5_albumes_mas_recientes(db: Session):
+    # Consulta principal para obtener los 5 álbumes más recientes
+    query = (
+        db.query(
+            Album.codigo_album,
+            Album.titulo,
+            Album.codigo_artista,
+            Artistas.nombre_artista,
+            Album.fecha_lanzamiento,
+            Album.url_portada
+        )
+        .join(Artistas, Album.codigo_artista == Artistas.codigo_artista)
+        .order_by(desc(Album.fecha_lanzamiento))  # Ordenar por fecha de lanzamiento, descendente
+        .limit(5)  # Limitar a los 5 álbumes más recientes
+    )
+
+    # Ejecutar la consulta y obtener los resultados
+    result = query.all()
+
+    # Serializar los resultados
+    return [
+        {
+            "codigo_album": row.codigo_album,
+            "titulo": row.titulo,
+            "codigo_artista": row.codigo_artista,
+            "nombre_artista": row.nombre_artista,
+            "fecha_lanzamiento": row.fecha_lanzamiento,
+            "url_portada": row.url_portada or "/images/default-cover.jpg",  # Si no tiene portada, usar la portada por defecto
         }
         for row in result
     ]
