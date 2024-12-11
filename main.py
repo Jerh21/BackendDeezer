@@ -195,6 +195,7 @@ def get_artist_stats(db: Session = Depends(get_db)):
             subquery_canciones_artistas.c.cantidad_cancion
         )
         .order_by(desc(func.count(FansArtista.codigo_artista)))  # Ordenar por cantidad de fans, descendente
+        .limit(5)  # Limitar a los primeros 5 resultados
     )
 
     result = query.all()
