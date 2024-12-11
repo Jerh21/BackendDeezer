@@ -58,7 +58,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         correo=user.correo,
         contrasenna=user.contrasenna,  # Almacenar la contraseña cifrada
         fecha_registro=user.fecha_registro,
-        url_foto_perfil=user.url_foto_perfil,
+        url_foto_perfil="/images/default-profile.png",
     )
     db.add(db_user)
     db.commit()
@@ -432,16 +432,6 @@ class InsertHistorialCanciones(BaseModel):
 @app.post("/insertar_historial/")
 def insertar_historial(historial: InsertHistorialCanciones, db: Session = Depends(get_db)):
 
-    # 1. Verificar que el CODIGO_USUARIO exista en la tabla de usuarios
-    usuario = db.query(User).filter(User.codigo_usuario == historial.codigo_usuario).first()
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-    # 2. Verificar que el CODIGO_CANCION exista en la tabla de canciones
-    cancion = db.query(Song).filter(Song.codigo_cancion == historial.codigo_cancion).first()
-    if not cancion:
-        raise HTTPException(status_code=404, detail="Canción no encontrada")
-
     # 3. Obtener el último CODIGO_HISTORIAL y aumentarlo en 1
     last_historial = db.query(HistorialCanciones).order_by(HistorialCanciones.codigo_historial.desc()).first()
     if last_historial:
@@ -463,3 +453,36 @@ def insertar_historial(historial: InsertHistorialCanciones, db: Session = Depend
     db.refresh(nuevo_historial)
 
     return {"message": "Historial insertado correctamente", "codigo_historial": nuevo_historial.codigo_historial}
+
+@app.post("/historial")
+def add_to_historial(user_id: int, song_id: int, db: Session = Depends(get_db)):
+    try:
+        # Verificar si el usuario y la canción existen
+        user = db.query(User).filter(User.codigo_usuario == user_id).first()
+        song = db.query(Song).filter(Song.codigo_cancion == song_id).first()
+
+        if not user or not song:
+            raise HTTPException(status_code=404, detail="Usuario o Canción no encontrados")
+
+        # Obtener el último codigo_historial y sumarle 1 para el nuevo valor
+        last_historial = db.query(HistorialCanciones).order_by(HistorialCanciones.codigo_historial.desc()).first()
+        if last_historial:
+            new_codigo_historial = last_historial.codigo_historial + 1
+        else:
+            new_codigo_historial = 1  # Si no existe historial previo, empezar desde 1
+
+        # Crear nueva entrada en el historial
+        new_entry = HistorialCanciones(
+            codigo_historial=new_codigo_historial,
+            codigo_usuario=user_id,
+            codigo_cancion=song_id,
+            fecha=datetime.today(),
+        )
+
+        db.add(new_entry)
+        db.commit()
+        db.refresh(new_entry)
+
+        return {"message": "Historial actualizado correctamente.", "entry": new_entry}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al insertar en el historial: {str(e)}")
