@@ -1,5 +1,5 @@
 from sqlalchemy import func, desc
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from models.Usuario import User, UserCreate
 from models.Historial_Canciones import HistorialCanciones
@@ -7,13 +7,14 @@ from models.Artistas import Artistas
 from models.Canciones import Song, InsertSong
 from models.Fans import FansArtista
 from models.Albumes import Album
+from models.Ambientes import Ambient
 from utils.database import get_db
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
-
+from fastapi import Body
 
 app = FastAPI()
 
@@ -486,3 +487,85 @@ def add_to_historial(user_id: int, song_id: int, db: Session = Depends(get_db)):
         return {"message": "Historial actualizado correctamente.", "entry": new_entry}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al insertar en el historial: {str(e)}")
+    
+@app.get("/ambientes")
+def get_ambientes(db: Session = Depends(get_db)):
+    try:
+        # Obtener todos los ambientes
+        ambientes = db.query(Ambient).all()
+        return ambientes
+    except SQLAlchemyError as e:
+        print(f"Error al obtener los ambientes: {e}")
+        raise HTTPException(status_code=500, detail="Error al obtener los ambientes.")
+
+
+@app.get("/canciones/ambiente/{codigo_ambiente}")
+def get_songs_by_ambient(codigo_ambiente: int, db: Session = Depends(get_db)):
+    # Realizamos la consulta a la base de datos para obtener las canciones de ese ambiente
+    songs = db.query(Song, Artistas.nombre_artista).join(Artistas, Song.codigo_artista == Artistas.codigo_artista).filter(Song.codigo_ambiente == codigo_ambiente).all()
+    
+    # Devolver los resultados de la consulta
+    result = []
+    for song, artist_name in songs:
+        result.append({
+            "codigo_cancion": song.codigo_cancion,
+            "codigo_artista": song.codigo_artista,
+            "codigo_genero": song.codigo_genero,
+            "codigo_ambiente": song.codigo_ambiente,
+            "codigo_album": song.codigo_album,
+            "titulo": song.titulo,
+            "duracion": song.duracion,
+            "fecha_subida": song.fecha_subida,
+            "url_foto_portada": song.url_foto_portada,
+            "numero_reproducciones": song.numero_reproducciones,
+            "nombre_artista": artist_name  # Incluimos el nombre del artista
+        })
+    
+    return result
+
+@app.get("/searching")
+def searching(search: str = Query(None), db: Session = Depends(get_db)):
+    try:
+        # Crear la consulta base
+        query = db.query(
+            Song.codigo_cancion,
+            Song.titulo.label("song_title"),
+            Song.duracion,
+            Song.url_foto_portada,
+            Artistas.nombre_artista,
+            Album.titulo.label("album_title")
+        ).join(
+            Artistas, Song.codigo_artista == Artistas.codigo_artista
+        ).join(
+            Album, Song.codigo_album == Album.codigo_album
+        )
+
+        # Filtrar por el término de búsqueda
+        if search:
+            search = f"%{search.lower()}%"
+            query = query.filter(
+                (Song.titulo.ilike(search)) |
+                (Artistas.nombre_artista.ilike(search)) |
+                (Album.titulo.ilike(search))
+            )
+
+        # Ejecutar la consulta
+        results = query.all()
+
+        # Formatear los resultados para enviarlos como JSON
+        songs = [
+            {
+                "id": song.codigo_cancion,
+                "title": song.song_title,
+                "artist": song.nombre_artista,
+                "album": song.album_title,
+                "duration": song.duracion,
+                "cover_url": song.url_foto_portada,
+            }
+            for song in results
+        ]
+
+        return {"songs": songs}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al buscar canciones: {str(e)}")
