@@ -31,3 +31,15 @@ class UserCreate(BaseModel):
     contrasenna: str
     fecha_registro: date
     url_foto_perfil: str | None = None
+    
+    
+#esquema de la respuesta
+class UserInfoResponse(BaseModel):
+    codigo_usuario: int
+    nombre_usuario: str
+    correo: str
+    url_foto_perfil: str
+
+
+    class Config:
+        orm_mode = True  # Permite que FastAPI convierta el modelo SQLAlchemy en un dict

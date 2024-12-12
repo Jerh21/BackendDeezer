@@ -1,7 +1,7 @@
 from sqlalchemy import func, desc
 from fastapi import FastAPI, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from models.Usuario import User, UserCreate
+from models.Usuario import User, UserCreate, UserInfoResponse
 from models.Historial_Canciones import HistorialCanciones
 from models.Artistas import Artistas
 from models.Canciones import Song, InsertSong
@@ -569,3 +569,17 @@ def searching(search: str = Query(None), db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al buscar canciones: {str(e)}")
+    
+
+
+# Endpoint para obtener los datos del usuario
+@app.get("/userInfo/{codigo_usuario}", response_model=UserInfoResponse)
+def get_user_info(codigo_usuario: int, db: Session = Depends(get_db)):
+    # Buscar al usuario por su 'codigo_usuario'
+    user = db.query(User).filter(User.codigo_usuario == codigo_usuario).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    # Devolver los datos del usuario (FastAPI manejará la conversión automáticamente)
+    return user
