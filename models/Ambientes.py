@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
-
+# Relación con la tabla 
 class Ambient(Base):
     __tablename__ = 'tbl_ambientes'
 
